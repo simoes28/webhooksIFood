@@ -8,7 +8,7 @@ const axios = require("axios");
 
 //carregando variaveis ambiente
 dotenv.config();
-const urlApi = process.env.IFOOD_API_URL;
+const urlApi = process.env.IFOOD_API_URL_ACCESSTOKEN;
 const apiClientId = process.env.IFOOD_API_CLIENTID;
 const apiClientSecret = process.env.IFOOD_API_CLIENTSECRET;
 
@@ -18,14 +18,11 @@ async function getAccessToken() {
   try {
     const data = new URLSearchParams();
     data.append("grantType", process.env.IFOOD_API_GRANT_TYPE);
-    data.append("clientId", process.env.IFOOD_API_CLIENTID);
-    data.append("clientSecret", process.env.IFOOD_API_CLIENTSECRET);
+    data.append("clientId", apiClientId);
+    data.append("clientSecret", apiClientSecret);
 
     //Realizando busca do token
-    const response = await axios.post(
-      process.env.IFOOD_API_URL_ACCESSTOKEN,
-      data
-    );
+    const response = await axios.post(urlApi, data);
 
     //resposta
     return response?.data;
@@ -47,13 +44,13 @@ async function getAccessToken() {
 //   });
 
 app.post("/", (req, res) => {
-  // getAccessToken()
-  //   .then((data) => {
-  //     console.log(data);
-  //   })
-  //   .catch((err) => {
-  //     console.error("Erro ao obter o token:", err.message);
-  //   });
+  getAccessToken()
+    .then((data) => {
+      console.log(data);
+    })
+    .catch((err) => {
+      console.error("Erro ao obter o token:", err.message);
+    });
   res.status(200).send(`funcionando`);
   console.log("Funcionou");
 });

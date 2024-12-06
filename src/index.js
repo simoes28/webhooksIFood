@@ -8,9 +8,11 @@ const axios = require("axios");
 
 //carregando variaveis ambiente
 dotenv.config();
-const urlApi = process.env.IFOOD_API_URL;
-const apiClientId = process.env.IFOOD_API_CLIENTID;
-const apiClientSecret = process.env.IFOOD_API_CLIENTSECRET;
+const urlApi =
+  "https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token"; //process.env.IFOOD_API_URL;
+const apiClientId = "f063e267-e513-4030-adc9-eeb3f8b13e6c"; //process.env.IFOOD_API_CLIENTID;
+const apiClientSecret =
+  "uq0w0rrnfvupzo3ph4zza3j7xf78kpthjher8oemt44mvqjydbo86phudmv93wow4e9evv901z9w1s8pp0dn2ihv9uyphupj5t"; //process.env.IFOOD_API_CLIENTSECRET;
 
 const app = express();
 

@@ -4,13 +4,52 @@ const crypto = require("crypto");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const morgan = require("morgan");
+const axios = require("axios");
 
 //carregando variaveis ambiente
 dotenv.config();
+const urlApi = process.env.IFOOD_API_URL;
+const apiClientId = process.env.IFOOD_API_CLIENTID;
+const apiClientSecret = process.env.IFOOD_API_CLIENTSECRET;
 
 const app = express();
 
-const clientSecret = process.env.IFOOD_API_CLIENTSECRET;
+async function getAccessToken() {
+  try {
+    const data = new URLSearchParams();
+    data.append("grantType", process.env.IFOOD_API_GRANT_TYPE);
+    data.append("clientId", process.env.IFOOD_API_CLIENTID);
+    data.append("clientSecret", process.env.IFOOD_API_CLIENTSECRET);
+
+    //Realizando busca do token
+    const response = await axios.post(
+      process.env.IFOOD_API_URL_ACCESSTOKEN,
+      data
+    );
+
+    //resposta
+    return response?.data;
+  } catch (error) {
+    console.error(
+      "Erro ao obter access token:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error("Não foi possível obter o access token.");
+  }
+}
+
+// getAccessToken()
+//   .then((data) => {
+//     console.log(data);
+//   })
+//   .catch((err) => {
+//     console.error("Erro ao obter o token:", err.message);
+//   });
+
+app.post("/", (req, res) => {
+  res.status(200).send(`funcionando`);
+  console.log("Funcionou");
+});
 
 //middlewares validação de assinaturas
 app.use("/webhook", (req, res, next) => {
@@ -20,7 +59,7 @@ app.use("/webhook", (req, res, next) => {
   if (!signature) {
     // Log de erro para depuração
     console.error("Assinatura não encontrada no cabeçalho");
-    return res.status(400).json({ message: "Assinatura não encontrada" });
+    return res.status(400).json({ error: "Assinatura não encontrada" });
   }
 
   // 2. Recupere o corpo da requisição (payload) como string JSON
@@ -28,7 +67,7 @@ app.use("/webhook", (req, res, next) => {
 
   // 3. Gerar a assinatura HMAC usando minha chave
   const generatedSignature = crypto
-    .createHmac("sha256", clientSecret)
+    .createHmac("sha256", apiClientSecret)
     .update(payload)
     .digest("hex"); //A assinatura será gerada em hexadecimal
 
@@ -39,7 +78,7 @@ app.use("/webhook", (req, res, next) => {
 
   //Caso a assinatura não sejá reconhecida:
   console.error("Assinatura inválida");
-  return res.status(403).json({ message: "Assinatura inválida" });
+  return res.status(403).json({ error: "Assinatura inválida" });
 });
 
 //Forma de ler JSON / middlewares
@@ -55,7 +94,7 @@ app.post("/webhook", (req, res) => {
 });
 
 //configuração da porta, usando variavel de ambiente
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3004;
 
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);

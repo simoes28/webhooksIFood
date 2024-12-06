@@ -19,14 +19,20 @@ const app = express();
 async function getAccessToken() {
   try {
     const data = new URLSearchParams();
-    data.append("grantType", process.env.IFOOD_API_GRANT_TYPE);
-    data.append("clientId", process.env.IFOOD_API_CLIENTID);
-    data.append("clientSecret", process.env.IFOOD_API_CLIENTSECRET);
+    data.append(
+      "grantType",
+      "client_credentials"
+    ) /*process.env.IFOOD_API_GRANT_TYPE)*/;
+    data.append("clientId", /*process.env.IFOOD_API_CLIENTID*/ apiClientId);
+    data.append(
+      "clientSecret",
+      /*process.env.IFOOD_API_CLIENTSECRET*/ apiClientSecret
+    );
 
     //Realizando busca do token
     const response = await axios.post(
-      process.env.IFOOD_API_URL_ACCESSTOKEN,
-      data
+      "https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token",
+      /*process.env.IFOOD_API_URL_ACCESSTOKEN*/ data
     );
 
     //resposta

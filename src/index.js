@@ -47,6 +47,13 @@ async function getAccessToken() {
 //   });
 
 app.post("/", (req, res) => {
+  getAccessToken()
+    .then((data) => {
+      console.log(data);
+    })
+    .catch((err) => {
+      console.error("Erro ao obter o token:", err.message);
+    });
   res.status(200).send(`funcionando`);
   console.log("Funcionou");
 });

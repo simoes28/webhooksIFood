@@ -22,7 +22,10 @@ async function getAccessToken() {
     data.append("clientSecret", apiClientSecret);
 
     //Realizando busca do token
-    const response = await axios.post(urlApi, data);
+    const response = await axios.post(
+      "https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token",
+      data
+    );
 
     //resposta
     return response?.data;

@@ -72,4 +72,10 @@ const updateDataToFirestore = async (collection, docId, data) => {
 };
 
 // Exportando as instâncias para uso posterior em outros arquivos
-export { auth, db, saveDataToFirestore, updateDataToFirestore, getInfoKeys };
+module.exports = {
+  auth,
+  db,
+  saveDataToFirestore,
+  updateDataToFirestore,
+  getInfoKeys,
+};

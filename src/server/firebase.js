@@ -53,7 +53,7 @@ const getInfoKeys = async (collection) => {
 
 const saveDataToFirestore = async (collection, data) => {
   try {
-    const docRef = db.collection(collection).doc;
+    const docRef = db.collection(collection).doc();
     await docRef.set(data);
     console.log("Dados salvos com sucesso:");
   } catch (error) {

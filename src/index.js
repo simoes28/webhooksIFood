@@ -5,8 +5,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const morgan = require("morgan");
 const axios = require("axios");
-import { getInfoKeys } from "./server/firebase";
-
+const { getInfoKeys } = require("./server/firebase");
 
 dotenv.config();
 

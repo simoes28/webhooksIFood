@@ -3,4 +3,4 @@
 apiifood-firebase-adminsdk-6vv4q-7ba2ad7189.json
 
 # Outros arquivos que podem ser ignorados, como logs, dependências locais, etc.
-node_modules/
+# node_modules/

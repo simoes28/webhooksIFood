@@ -14,6 +14,7 @@ let keysIfood;
 
 async function getAccessToken() {
   try {
+    console.log("teste", keysIfood);
     const data = new URLSearchParams();
     data.append("grantType", "client_credentials");
     data.append("clientId", keysIfood?.clientId);

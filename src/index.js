@@ -15,9 +15,9 @@ let keysIfood;
 async function getAccessToken() {
   try {
     const data = new URLSearchParams();
-    data.push("grantType", "client_credentials");
-    data.push("clientId", keysIfood?.clientId);
-    data.push("clientSecret", keysIfood?.clientSecret);
+    data.append("grantType", "client_credentials");
+    data.append("clientId", keysIfood?.clientId);
+    data.append("clientSecret", keysIfood?.clientSecret);
 
     //Realizando busca do token
     const response = await axios.post(

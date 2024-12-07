@@ -7,7 +7,7 @@ const morgan = require("morgan");
 const axios = require("axios");
 import { getInfoKeys } from "./server/firebase";
 
-//carregando variaveis ambiente
+
 dotenv.config();
 
 const app = express();

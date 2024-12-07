@@ -12,37 +12,37 @@ dotenv.config();
 const app = express();
 let keysIfood;
 
-// async function getAccessToken() {
-//   try {
-//     const data = new URLSearchParams();
-//     data.push("grantType", "client_credentials");
-//     data.push("clientId", keysIfood?.clientId);
-//     data.push("clientSecret", keysIfood?.clientSecret);
+async function getAccessToken() {
+  try {
+    const data = new URLSearchParams();
+    data.push("grantType", "client_credentials");
+    data.push("clientId", keysIfood?.clientId);
+    data.push("clientSecret", keysIfood?.clientSecret);
 
-//     //Realizando busca do token
-//     const response = await axios.post(
-//       "https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token",
-//       data
-//     );
+    //Realizando busca do token
+    const response = await axios.post(
+      "https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token",
+      data
+    );
 
-//     console.log(data);
-//     //resposta
-//     return response?.data;
-//   } catch (error) {
-//     console.error(
-//       "Erro ao obter access token:",
-//       error.response ? error.response.data : error.message
-//     );
-//     throw new Error("Não foi possível obter o access token.");
-//   }
-// }
+    console.log(data);
+    //resposta
+    return response?.data;
+  } catch (error) {
+    console.error(
+      "Erro ao obter access token:",
+      error.response ? error.response.data : error.message
+    );
+    throw new Error("Não foi possível obter o access token.");
+  }
+}
 
 //BUscando credenciais api
 const fetchKeys = async () => {
   try {
     keysIfood = await getInfoKeys("keysIfood");
     console.log(keysIfood);
-    // getAccessToken();
+    getAccessToken();
   } catch (error) {
     console.error(
       "Erro ao obter keys:",

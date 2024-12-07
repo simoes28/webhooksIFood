@@ -1,5 +1,5 @@
-import admin from "firebase-admin"; // Importação do Firebase Admin SDK
-import dotenv from "dotenv"; // Importando o dotenv para carregar variáveis de ambiente
+const admin = require("firebase-admin"); // Importação do Firebase Admin SDK
+const dotenv = require("dotenv"); // Importando o dotenv para carregar variáveis de ambiente
 
 // Carregando variáveis de ambiente
 dotenv.config(); // Isso permite que você acesse as variáveis de ambiente do arquivo .env

@@ -29,6 +29,7 @@ async function getAccessToken() {
         data
       );
       //resposta
+      console.log(response?.data);
       return response?.data;
     }
   } catch (error) {

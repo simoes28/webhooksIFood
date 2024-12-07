@@ -20,13 +20,15 @@ async function getAccessToken() {
     data.append("clientId", keysIfood?.clientId);
     data.append("clientSecret", keysIfood?.clientSecret);
 
-    //Realizando busca do token
-    const response = await axios.post(
-      "https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token",
-      data
-    );
-
     console.log(data);
+
+    //Realizando busca do token
+    if (keysIfood?.clientId && keysIfood?.clientSecret) {
+      const response = await axios.post(
+        "https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token",
+        data
+      );
+    }
     //resposta
     return response?.data;
   } catch (error) {

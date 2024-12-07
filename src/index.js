@@ -28,9 +28,9 @@ async function getAccessToken() {
         "https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token",
         data
       );
+      //resposta
+      return response?.data;
     }
-    //resposta
-    return response?.data;
   } catch (error) {
     console.error(
       "Erro ao obter access token:",

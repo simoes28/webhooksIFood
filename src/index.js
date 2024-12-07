@@ -42,6 +42,7 @@ async function getAccessToken() {
 const fetchKeys = async () => {
   try {
     keysIfood = await getInfoKeys("keysIfood");
+    console.log(keysIfood);
     getAccessToken();
   } catch (error) {
     console.error(

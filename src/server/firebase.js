@@ -4,14 +4,19 @@ import dotenv from "dotenv"; // Importando o dotenv para carregar variáveis de 
 // Carregando variáveis de ambiente
 dotenv.config(); // Isso permite que você acesse as variáveis de ambiente do arquivo .env
 
-// Inicializando o Firebase Admin SDK com a chave privada
-admin.initializeApp({
-  credential: admin.credential.cert({
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"), // Corrige a chave privada para a forma correta
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  }),
-});
+// Verificando se o Firebase já foi inicializado
+if (admin.apps.length === 0) {
+  // Inicializando o Firebase Admin SDK apenas se ainda não foi inicializado
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"), // Corrige a chave privada
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    }),
+  });
+} else {
+  console.log("Firebase Admin já inicializado.");
+}
 
 // Obtendo instâncias do Auth e Firestore
 const auth = admin.auth(); // Instância do Firebase Auth para autenticação
@@ -29,6 +34,22 @@ const db = admin.firestore(); // Instância do Firestore para interações com o
 //     console.error("Erro ao criar usuário:", error);
 //   }
 // };
+
+const getInfoKeys = async (collection) => {
+  try {
+    const querySnapshot = await db.collection(collection).get();
+    //Armazena os dados em um array
+    const data = [];
+    querySnapshot.forEach((doc) => {
+      data.push({ id: doc?.id, ...doc?.data() });
+    });
+    console.log("Dados recuperados: ", data);
+    return data;
+  } catch (error) {
+    console.error("Erro ao buscar dados: ", error);
+    return error;
+  }
+};
 
 const saveDataToFirestore = async (collection, data) => {
   try {
@@ -51,4 +72,4 @@ const updateDataToFirestore = async (collection, docId, data) => {
 };
 
 // Exportando as instâncias para uso posterior em outros arquivos
-export { auth, db, saveDataToFirestore, updateDataToFirestore };
+export { auth, db, saveDataToFirestore, updateDataToFirestore, getInfoKeys };

@@ -5,21 +5,20 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const morgan = require("morgan");
 const axios = require("axios");
+import { getInfoKeys } from "./server/firebase";
 
 //carregando variaveis ambiente
 dotenv.config();
-const urlApi = process.env.IFOOD_API_URL_ACCESSTOKEN;
-const apiClientId = process.env.IFOOD_API_CLIENTID;
-const apiClientSecret = process.env.IFOOD_API_CLIENTSECRET;
 
 const app = express();
+let keysIfood;
 
 async function getAccessToken() {
   try {
     const data = new URLSearchParams();
-    data.append("grantType", process.env.IFOOD_API_GRANT_TYPE);
-    data.append("clientId", apiClientId);
-    data.append("clientSecret", apiClientSecret);
+    data.append("grantType", "client_credentials");
+    data.append("clientId", keysIfood?.clientId);
+    data.append("clientSecret", keysIfood?.clientSecret);
 
     //Realizando busca do token
     const response = await axios.post(
@@ -27,6 +26,7 @@ async function getAccessToken() {
       data
     );
 
+    console.log(data);
     //resposta
     return response?.data;
   } catch (error) {
@@ -38,22 +38,28 @@ async function getAccessToken() {
   }
 }
 
-// getAccessToken()
-//   .then((data) => {
-//     console.log(data);
-//   })
-//   .catch((err) => {
-//     console.error("Erro ao obter o token:", err.message);
-//   });
-
+//BUscando credenciais api
+const fetchKeys = async () => {
+  try {
+    keysIfood = await getInfoKeys("keysIfood");
+    getAccessToken();
+  } catch (error) {
+    console.error(
+      "Erro ao obter keys:",
+      error.response ? error.response.data : error.message
+    );
+  }
+};
 app.post("/", (req, res) => {
-  getAccessToken()
-    .then((data) => {
-      console.log(data);
-    })
-    .catch((err) => {
-      console.error("Erro ao obter o token:", err.message);
-    });
+  // getAccessToken()
+  //   .then((data) => {
+  //     console.log(data);
+  //   })
+  //   .catch((err) => {
+  //     console.error("Erro ao obter o token:", err.message);
+  //   });
+  fetchKeys();
+
   res.status(200).send(`funcionando`);
   console.log("Funcionou");
 });

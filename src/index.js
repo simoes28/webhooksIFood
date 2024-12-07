@@ -14,24 +14,21 @@ let keysIfood;
 
 async function getAccessToken() {
   try {
-    console.log("teste", keysIfood);
     const data = new URLSearchParams();
     data.append("grantType", "client_credentials");
-    data.append("clientId", keysIfood?.clientId);
-    data.append("clientSecret", keysIfood?.clientSecret);
+    data.append("clientId", keysIfood[0]?.clientId);
+    data.append("clientSecret", keysIfood[0]?.clientSecret);
 
     console.log(data);
 
     //Realizando busca do token
-    if (keysIfood?.clientId && keysIfood?.clientSecret) {
-      const response = await axios.post(
-        "https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token",
-        data
-      );
-      //resposta
-      console.log(response?.data);
-      return response?.data;
-    }
+    const response = await axios.post(
+      "https://merchant-api.ifood.com.br/authentication/v1.0/oauth/token",
+      data
+    );
+    //resposta
+    console.log(response?.data);
+    return response?.data;
   } catch (error) {
     console.error(
       "Erro ao obter access token:",

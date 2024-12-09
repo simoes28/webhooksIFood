@@ -10,12 +10,12 @@ const { getInfoKeys, updateDataToFirestore } = require("./server/firebase");
 dotenv.config();
 
 const app = express();
+let keysIfood;
 //Forma de ler JSON / middlewares
 app.use(cors()); //Permite requisições de outras origens
 app.use(morgan("dev")); //Log das requisições
 app.use(express.json()); //PAra permitir o corpo das requisições em formato JSON
 app.use(express.urlencoded({ extended: true })); //Para lidar com dados de formularios
-let keysIfood;
 
 async function getAccessToken() {
   try {
@@ -94,10 +94,10 @@ app.post("/", (req, res) => {
   fetchKeys();
 
   res.status(200).send(`funcionando`);
-  console.log("Funcionou");
+  console.log("Iniciando");
 });
 
-//middlewares validação de assinaturas
+//Validando assinatura IFood
 app.use("/webhook", (req, res, next) => {
   // 1. Recupera a assinatura recebida no header 'X-IFood-Signature'
   const signature = req.headers["x-ifood-signature"];
@@ -111,7 +111,7 @@ app.use("/webhook", (req, res, next) => {
 
   // 2. Recupere o corpo da requisição (payload) como string JSON
   const payload = JSON.stringify(req.body);
-  console.log(payload);
+  // console.log(payload);
 
   if (!payload) {
     console.error("Corpo da requisição (payload) está vazio ou inválido");

@@ -89,10 +89,10 @@ const fetchKeys = async () => {
   }
 };
 
+fetchKeys();
+
 //Rota de teste para inciar a operação
 app.post("/", (req, res) => {
-  fetchKeys();
-
   res.status(200).send(`funcionando`);
   console.log("Iniciando");
 });

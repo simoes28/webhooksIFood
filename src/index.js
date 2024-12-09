@@ -137,7 +137,9 @@ app.use("/webhook", (req, res, next) => {
 //Rota inicial para webhooks
 app.post("/webhook", (req, res) => {
   console.log("Webhook recebido com sucesso!");
-  console.log(req?.body);
+  console.log("headers: ", req?.headers["x-ifood-signature"]);
+  console.log("body: ", req?.body);
+
   res.status(202).send("Webhook processado com sucesso");
 });
 

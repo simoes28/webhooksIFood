@@ -179,7 +179,10 @@ const salvarNovoPedidoFlyp = async (dadosSalvarPedidoFlyp) => {
 };
 
 //Função para realizar o cancelamento do pedido
-const cancelamentoPedido = async (filtrarPedidoCancelamento, tokenClienteFlyp) => {
+const cancelamentoPedido = async (
+  filtrarPedidoCancelamento,
+  tokenClienteFlyp
+) => {
   const statusPedidoFlyp = filtrarPedidoCancelamento?.status;
   const idPedidoFlyp = filtrarPedidoCancelamento?.id_mch;
   if (
@@ -255,6 +258,14 @@ async function acoesWebhooks(data) {
   const detalhesEmpresa = await cad_empresasFlyp?.find(
     (data) => data?.id_machine === empresa_id
   );
+
+  if (
+    direcionamentoCode === "KEEPALIVE" &&
+    direcionamentoFullCode === "KEEPALIVE"
+  ) {
+    return;
+  }
+
   const responseTokenFlyp = await axios.post(
     `https://integracao.flyp.com.br/token`,
     {

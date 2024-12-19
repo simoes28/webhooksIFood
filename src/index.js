@@ -1,5 +1,6 @@
 //Configuração inicial
 const express = require("express");
+const { addMinutes, format } = require("date-fns");
 const crypto = require("crypto");
 const dotenv = require("dotenv");
 const cors = require("cors");
@@ -123,12 +124,13 @@ const atualizarDadosPedidosFlyp = async () => {
 
 //Função para abertura de um novo pedido
 const aberturaNovoPedido = async (data, tokenClienteFlyp) => {
+  console.log(data);
   const dataAbrirChamado = {
     forma_pagamento: data?.fmr_pagamento,
     empresa_id: 0,
-    retorno: data?.corridaComRetorno ? true : false,
-    // data: "any",
-    // hora: "any",
+    retorno: data?.corridaComRetorno ? "S" : "N",
+    data: data?.data,
+    hora: data?.hora,
     paradas: [
       {
         nome_cliente_parada: data?.nome_cliente_parada,
@@ -139,7 +141,8 @@ const aberturaNovoPedido = async (data, tokenClienteFlyp) => {
         estado_parada: /*data?.estado_parada*/ "MG",
         // lat_parada: data?.lat_parada,
         // lng_parada: data?.lng_parada,
-        // codigo_confirmacao: data?.codigo_confirmacao,
+        codigo_confirmacao: data?.codigo_confirmacao,
+        id_externo: `IFOOD ${data?.displayId}`,
       },
     ],
   };
@@ -207,8 +210,11 @@ const cancelamentoPedido = async (
       }
     );
     if (responseCancelamentoPedido?.data?.success === true) {
+      const dataAtual = new Date();
+      const dataHoraFormatado = format(dataAtual, "yyyy-MM-dd HH:mm:SS");
       const dadosAtualizarStatus = {
         status: "C",
+        dt_status: dataHoraFormatado,
       };
       const condicaoAtualizarStatus = {
         id_mch: idPedidoFlyp,
@@ -227,38 +233,8 @@ const cancelamentoPedido = async (
 async function acoesWebhooks(data) {
   const direcionamentoCode = data?.code;
   const direcionamentoFullCode = data?.fullCode;
-  const idClientIFood = data?.merchantId;
-  const idPedido = data?.orderId;
 
-  //Formantando data da criação para envio
-  const dataCriacaoPedido = data?.createdAt;
-  const dataCriacaoPedidoFormatado = new Date(dataCriacaoPedido);
-  const ano = dataCriacaoPedidoFormatado?.getFullYear();
-  const mes = String(dataCriacaoPedidoFormatado?.getMonth() + 1)?.padStart(
-    2,
-    "0"
-  );
-  const dia = String(dataCriacaoPedidoFormatado?.getDate())?.padStart(2, "0");
-  const hora = String(dataCriacaoPedidoFormatado?.getHours())?.padStart(2, "0");
-  const minuto = String(dataCriacaoPedidoFormatado?.getMinutes())?.padStart(
-    2,
-    "0"
-  );
-  const segundo = String(dataCriacaoPedidoFormatado?.getSeconds())?.padStart(
-    2,
-    "0"
-  );
-
-  const empresaFiltro = await cad_integracoesFlyp?.find(
-    (data) => data?.int_token === idClientIFood && data?.integracao === "ifood"
-  );
-  const fmr_pagamento = empresaFiltro?.tipo;
-  const empresa_id = empresaFiltro?.cli_id;
-  const integracao_id = empresaFiltro?.id;
-  const detalhesEmpresa = await cad_empresasFlyp?.find(
-    (data) => data?.id_machine === empresa_id
-  );
-
+  //Verificando se o webhook é de validação online ifood
   if (
     direcionamentoCode === "KEEPALIVE" &&
     direcionamentoFullCode === "KEEPALIVE"
@@ -266,19 +242,51 @@ async function acoesWebhooks(data) {
     return;
   }
 
-  const responseTokenFlyp = await axios.post(
-    `https://integracao.flyp.com.br/token`,
-    {
-      api_key: detalhesEmpresa?.api_key,
-    }
+  const idClientIFood = data?.merchantId;
+  const idPedido = data?.orderId;
+
+  //Formantando data da criação para envio
+  const dataOriginalCriacaoPedido = data?.createdAt;
+  let dataOriginal = new Date(dataOriginalCriacaoPedido);
+  const ano = dataOriginal?.getFullYear();
+  const mes = String(dataOriginal?.getMonth() + 1)?.padStart(2, "0");
+  const dia = String(dataOriginal?.getDate())?.padStart(2, "0");
+  const hora = String(dataOriginal?.getHours())?.padStart(2, "0");
+  const minuto = String(dataOriginal?.getMinutes())?.padStart(2, "0");
+  const segundo = String(dataOriginal?.getSeconds())?.padStart(2, "0");
+  const dataCriacaoPedidoIFood = `${ano}-${mes}-${dia} ${hora}:${minuto}:${segundo}`;
+
+  const empresaFiltro = await cad_integracoesFlyp?.find(
+    (data) => data?.int_token === idClientIFood && data?.integracao === "ifood"
   );
-  const tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
+  const tempoEspera = empresaFiltro?.tempoantecedencia;
+  let dataOriginalEspera = addMinutes(dataOriginal, tempoEspera);
+  let dataOriginalFormatadaEspera = format(dataOriginalEspera, "dd-MM-yyyy");
+  let horaOriginalFormatadaEspera = format(dataOriginalEspera, "HH:mm");
+  // console.log("dataOriginalFormatadaEspera: ", dataOriginalFormatadaEspera);
+  // console.log("horaOriginalFormatadaEspera: ", horaOriginalFormatadaEspera);
+  const fmr_pagamento = empresaFiltro?.tipo;
+  const empresa_id = empresaFiltro?.cli_id;
+  const integracao_id = empresaFiltro?.id;
+  const detalhesEmpresa = await cad_empresasFlyp?.find(
+    (data) => data?.id_machine === empresa_id
+  );
+
+  let responseTokenFlyp;
+  let tokenClienteFlyp;
   try {
     if (
       direcionamentoCode === "CFM" &&
       direcionamentoFullCode === "CONFIRMED"
     ) {
       //Rota para confirmação do pedido
+      responseTokenFlyp = await axios.post(
+        `https://integracao.flyp.com.br/token`,
+        {
+          api_key: detalhesEmpresa?.api_key,
+        }
+      );
+      tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
       const responsePedido = await axios.get(
         `https://merchant-api.ifood.com.br/order/v1.0/orders/${idPedido}`,
         {
@@ -290,66 +298,73 @@ async function acoesWebhooks(data) {
           },
         }
       );
-      let endereco_parada =
-        responsePedido?.data?.delivery?.deliveryAddress?.streetName;
-      let bairro_parada =
-        responsePedido?.data?.delivery?.deliveryAddress?.neighborhood;
-      let cidade_parada = responsePedido?.data?.delivery?.deliveryAddress?.city;
-      let estado_parada =
-        responsePedido?.data?.delivery?.deliveryAddress?.state;
-      let lat_parada =
-        responsePedido?.data?.delivery?.deliveryAddress?.coordinates?.latitude;
-      let lng_parada =
-        responsePedido?.data?.delivery?.deliveryAddress?.coordinates?.longitude;
-      let codigo_confirmacao = responsePedido?.data?.delivery?.pickupCode;
-      let nome_cliente_parada = responsePedido?.data?.customer?.name;
-      let telefone_cliente_parada =
-        responsePedido?.data?.customer?.phone?.number;
+      console.log("TESTE: ", responsePedido?.data);
       // //definindo se possui retorno
       const corridaComRetorno =
         await responsePedido?.data?.payments?.methods?.find(
           (data) => data?.method === "CREDIT" || data?.method === "DEBIT"
         );
 
+      //Somando tempo de espera para chamar corrida
+      dataOriginal.setMinutes(dataOriginal.getMinutes() + tempoEspera);
+
       const dadosAbrirChamado = {
         fmr_pagamento: fmr_pagamento,
+        data: dataOriginalFormatadaEspera,
+        hora: horaOriginalFormatadaEspera,
         corridaComRetorno: corridaComRetorno,
-        nome_cliente_parada: nome_cliente_parada,
-        telefone_cliente_parada: telefone_cliente_parada,
-        endereco_parada: endereco_parada,
-        bairro_parada: bairro_parada,
-        cidade_parada: cidade_parada,
-        estado_parada: estado_parada,
-        lat_parada: lat_parada,
-        lng_parada: lng_parada,
-        codigo_confirmacao: codigo_confirmacao,
+        nome_cliente_parada: responsePedido?.data?.customer?.name,
+        telefone_cliente_parada: responsePedido?.data?.customer?.phone?.number,
+        endereco_parada:
+          responsePedido?.data?.delivery?.deliveryAddress?.streetName,
+        bairro_parada:
+          responsePedido?.data?.delivery?.deliveryAddress?.neighborhood,
+        cidade_parada: responsePedido?.data?.delivery?.deliveryAddress?.city,
+        estado_parada: responsePedido?.data?.delivery?.deliveryAddress?.state,
+        lat_parada:
+          responsePedido?.data?.delivery?.deliveryAddress?.coordinates
+            ?.latitude,
+        lng_parada:
+          responsePedido?.data?.delivery?.deliveryAddress?.coordinates
+            ?.longitude,
+        codigo_confirmacao: responsePedido?.data?.delivery?.pickupCode,
+        displayId: responsePedido?.data?.displayId,
       };
       const responseNovoPedido = await aberturaNovoPedido(
         dadosAbrirChamado,
         tokenClienteFlyp
       );
-
-      const dadosSalvarPedidoFlyp = {
-        int_id: integracao_id,
-        order_id: null,
-        json: JSON.stringify(dadosAbrirChamado),
-        status: "A",
-        id_mch: responseNovoPedido?.data?.response?.id_mch,
-        dt_criacao_pedido: `${ano}-${mes}-${dia} ${hora}:${minuto}:${segundo}`,
-        dt_status: `${ano}-${mes}-${dia} ${hora}:${minuto}:${segundo}`,
-        dt_criacao_corrida: new Date(),
-        response: JSON.stringify(responseNovoPedido?.data),
-        order_string: idPedido,
-      };
-      const responseSalvarDadosPedidoFlyp = await salvarNovoPedidoFlyp(
-        dadosSalvarPedidoFlyp
-      );
-      console.log(responseSalvarDadosPedidoFlyp);
+      if (responseNovoPedido?.data?.response?.id_mch) {
+        const dadosSalvarPedidoFlyp = {
+          int_id: integracao_id,
+          order_id: responsePedido?.data?.displayId,
+          json: JSON.stringify(dadosAbrirChamado),
+          status: "A",
+          id_mch: responseNovoPedido?.data?.response?.id_mch,
+          dt_criacao_pedido_ifood: dataCriacaoPedidoIFood,
+          dt_status: dataCriacaoPedidoIFood,
+          dt_registro_solicitacao_flyp: new Date(),
+          dt_abertura_corrida_mch: `${dataOriginalFormatadaEspera}  ${horaOriginalFormatadaEspera}`,
+          response: JSON.stringify(responseNovoPedido?.data),
+          order_string: idPedido,
+        };
+        const responseSalvarDadosPedidoFlyp = await salvarNovoPedidoFlyp(
+          dadosSalvarPedidoFlyp
+        );
+        console.log(responseSalvarDadosPedidoFlyp);
+      }
     } else if (
       direcionamentoCode === "CAN" &&
       direcionamentoFullCode === "CANCELLED"
     ) {
       //Rota para cancelamento
+      responseTokenFlyp = await axios.post(
+        `https://integracao.flyp.com.br/token`,
+        {
+          api_key: detalhesEmpresa?.api_key,
+        }
+      );
+      tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
       await atualizarDadosPedidosFlyp();
       const filtrarPedidoCancelamento = await dados_pedidosFlyp?.find(
         (data) => data?.order_string === idPedido
@@ -391,7 +406,7 @@ app.post("/conexaoMySql", (req, res) => {
 //Rota para novos cadastros de integração
 app.post("/novaIntegracao", (req, res) => {
   atualizarIntegracoes();
-  res.status(200).send(`TESTE`);
+  res.status(202).send(`Empresas Atualizadas`);
 });
 
 // app.post("/teste", async (req, res) => {

@@ -181,24 +181,32 @@ const salvarNovoPedidoFlyp = async (dadosSalvarPedidoFlyp) => {
   }
 };
 
+//Função para alterar dados no banco FLYP
+const atualizarDadosFlyp = async (nomeTabela, data, condicao) => {
+  const responseAtualizarStatus = await atualizarDados(
+    nomeTabela,
+    data,
+    condicao
+  );
+  console.log(responseAtualizarStatus);
+};
+
 //Função para realizar o cancelamento do pedido
-const cancelamentoPedido = async (
-  filtrarPedidoCancelamento,
-  tokenClienteFlyp
-) => {
-  const statusPedidoFlyp = filtrarPedidoCancelamento?.status;
-  const idPedidoFlyp = filtrarPedidoCancelamento?.id_mch;
+const cancelamentoPedido = async (data, tokenClienteFlyp) => {
+  let statusPedidoFlyp = data?.status;
+  let idPedidoFlyp = data?.id_mch;
   if (
     statusPedidoFlyp === "E" ||
     statusPedidoFlyp === "F" ||
     statusPedidoFlyp === "N" ||
-    statusPedidoFlyp === "C"
+    statusPedidoFlyp === "C" ||
+    statusPedidoFlyp === "A"
   ) {
     console.error(
       `Não é possível realizar o cancelamento da OS (${idPedidoFlyp}), devido seu status está em (${statusPedidoFlyp})`
     );
   } else {
-    const responseCancelamentoPedido = await axios.post(
+    let responseCancelamentoPedido = await axios.post(
       `https://integracao.flyp.com.br/cancelar_entrega`,
       {
         id_mch: idPedidoFlyp,
@@ -210,29 +218,28 @@ const cancelamentoPedido = async (
       }
     );
     if (responseCancelamentoPedido?.data?.success === true) {
-      const dataAtual = new Date();
-      const dataHoraFormatado = format(dataAtual, "yyyy-MM-dd HH:mm:SS");
-      const dadosAtualizarStatus = {
+      let dataAtual = new Date();
+      let dataHoraFormatado = format(dataAtual, "yyyy-MM-dd HH:mm:SS");
+      let dadosAtualizarStatus = {
         status: "C",
         dt_status: dataHoraFormatado,
       };
-      const condicaoAtualizarStatus = {
+      let condicaoAtualizarStatus = {
         id_mch: idPedidoFlyp,
       };
-      const responseAtualizarStatus = await atualizarDados(
+      atualizarDadosFlyp(
         "int_ifood",
         dadosAtualizarStatus,
         condicaoAtualizarStatus
       );
-      console.log(responseAtualizarStatus);
     }
   }
 };
 
-//Função que irá direcionar cada webhook para sua ação especifica
-async function acoesWebhooks(data) {
-  const direcionamentoCode = data?.code;
-  const direcionamentoFullCode = data?.fullCode;
+//Função que irá direcionar cada webhook do IFood para sua ação especifica
+async function acoesWebhooksIFood(data) {
+  let direcionamentoCode = data?.code;
+  let direcionamentoFullCode = data?.fullCode;
 
   //Verificando se o webhook é de validação online ifood
   if (
@@ -242,33 +249,33 @@ async function acoesWebhooks(data) {
     return;
   }
 
-  const idClientIFood = data?.merchantId;
-  const idPedido = data?.orderId;
+  let idClientIFood = data?.merchantId;
+  let idPedido = data?.orderId;
 
   //Formantando data da criação para envio
-  const dataOriginalCriacaoPedido = data?.createdAt;
+  let dataOriginalCriacaoPedido = data?.createdAt;
   let dataOriginal = new Date(dataOriginalCriacaoPedido);
-  const ano = dataOriginal?.getFullYear();
-  const mes = String(dataOriginal?.getMonth() + 1)?.padStart(2, "0");
-  const dia = String(dataOriginal?.getDate())?.padStart(2, "0");
-  const hora = String(dataOriginal?.getHours())?.padStart(2, "0");
-  const minuto = String(dataOriginal?.getMinutes())?.padStart(2, "0");
-  const segundo = String(dataOriginal?.getSeconds())?.padStart(2, "0");
-  const dataCriacaoPedidoIFood = `${ano}-${mes}-${dia} ${hora}:${minuto}:${segundo}`;
+  let ano = dataOriginal?.getFullYear();
+  let mes = String(dataOriginal?.getMonth() + 1)?.padStart(2, "0");
+  let dia = String(dataOriginal?.getDate())?.padStart(2, "0");
+  let hora = String(dataOriginal?.getHours())?.padStart(2, "0");
+  let minuto = String(dataOriginal?.getMinutes())?.padStart(2, "0");
+  let segundo = String(dataOriginal?.getSeconds())?.padStart(2, "0");
+  let dataCriacaoPedidoIFood = `${ano}-${mes}-${dia} ${hora}:${minuto}:${segundo}`;
 
-  const empresaFiltro = await cad_integracoesFlyp?.find(
+  let empresaFiltro = await cad_integracoesFlyp?.find(
     (data) => data?.int_token === idClientIFood && data?.integracao === "ifood"
   );
-  const tempoEspera = empresaFiltro?.tempoantecedencia;
+  let tempoEspera = empresaFiltro?.tempoantecedencia;
   let dataOriginalEspera = addMinutes(dataOriginal, tempoEspera);
   let dataOriginalFormatadaEspera = format(dataOriginalEspera, "dd-MM-yyyy");
   let horaOriginalFormatadaEspera = format(dataOriginalEspera, "HH:mm");
   // console.log("dataOriginalFormatadaEspera: ", dataOriginalFormatadaEspera);
   // console.log("horaOriginalFormatadaEspera: ", horaOriginalFormatadaEspera);
-  const fmr_pagamento = empresaFiltro?.tipo;
-  const empresa_id = empresaFiltro?.cli_id;
-  const integracao_id = empresaFiltro?.id;
-  const detalhesEmpresa = await cad_empresasFlyp?.find(
+  let fmr_pagamento = empresaFiltro?.tipo;
+  let empresa_id = empresaFiltro?.cli_id;
+  let integracao_id = empresaFiltro?.id;
+  let detalhesEmpresa = await cad_empresasFlyp?.find(
     (data) => data?.id_machine === empresa_id
   );
 
@@ -287,7 +294,7 @@ async function acoesWebhooks(data) {
         }
       );
       tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
-      const responsePedido = await axios.get(
+      let responsePedido = await axios.get(
         `https://merchant-api.ifood.com.br/order/v1.0/orders/${idPedido}`,
         {
           params: {
@@ -300,7 +307,7 @@ async function acoesWebhooks(data) {
       );
       console.log("TESTE: ", responsePedido?.data);
       // //definindo se possui retorno
-      const corridaComRetorno =
+      let corridaComRetorno =
         await responsePedido?.data?.payments?.methods?.find(
           (data) => data?.method === "CREDIT" || data?.method === "DEBIT"
         );
@@ -308,7 +315,7 @@ async function acoesWebhooks(data) {
       //Somando tempo de espera para chamar corrida
       dataOriginal.setMinutes(dataOriginal.getMinutes() + tempoEspera);
 
-      const dadosAbrirChamado = {
+      let dadosAbrirChamado = {
         fmr_pagamento: fmr_pagamento,
         data: dataOriginalFormatadaEspera,
         hora: horaOriginalFormatadaEspera,
@@ -330,16 +337,16 @@ async function acoesWebhooks(data) {
         codigo_confirmacao: responsePedido?.data?.delivery?.pickupCode,
         displayId: responsePedido?.data?.displayId,
       };
-      const responseNovoPedido = await aberturaNovoPedido(
+      let responseNovoPedido = await aberturaNovoPedido(
         dadosAbrirChamado,
         tokenClienteFlyp
       );
       if (responseNovoPedido?.data?.response?.id_mch) {
-        const dadosSalvarPedidoFlyp = {
+        let dadosSalvarPedidoFlyp = {
           int_id: integracao_id,
           order_id: responsePedido?.data?.displayId,
           json: JSON.stringify(dadosAbrirChamado),
-          status: "A",
+          status: "G",
           id_mch: responseNovoPedido?.data?.response?.id_mch,
           dt_criacao_pedido_ifood: dataCriacaoPedidoIFood,
           dt_status: dataCriacaoPedidoIFood,
@@ -348,7 +355,7 @@ async function acoesWebhooks(data) {
           response: JSON.stringify(responseNovoPedido?.data),
           order_string: idPedido,
         };
-        const responseSalvarDadosPedidoFlyp = await salvarNovoPedidoFlyp(
+        let responseSalvarDadosPedidoFlyp = await salvarNovoPedidoFlyp(
           dadosSalvarPedidoFlyp
         );
         console.log(responseSalvarDadosPedidoFlyp);
@@ -366,7 +373,7 @@ async function acoesWebhooks(data) {
       );
       tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
       await atualizarDadosPedidosFlyp();
-      const filtrarPedidoCancelamento = await dados_pedidosFlyp?.find(
+      let filtrarPedidoCancelamento = await dados_pedidosFlyp?.find(
         (data) => data?.order_string === idPedido
       );
       if (filtrarPedidoCancelamento) {
@@ -380,6 +387,36 @@ async function acoesWebhooks(data) {
       `Erro ao executar a ação: ${error}`,
       error.response ? error.response.data : error.message
     );
+  }
+}
+
+//Função que irá direcionar cada webhook do FLYP para sua ação especifica
+async function acoesWebhooksFlyp(data) {
+  console.log(data);
+  let direcionamento = data?.status_solicitacao;
+  let id_mch = data?.id_mch;
+  if (direcionamento === "C") {
+    //Rota para webhook de cancelamento vindo do FLYP
+    await atualizarDadosPedidosFlyp();
+    let validacaoIdMch = dados_pedidosFlyp?.find(
+      (data) => data?.id_mch == id_mch
+    );
+
+    //validando se o id_mch recebido no webhook é valido no banco
+    if (!validacaoIdMch) {
+      console.error(`id_mch (${id_mch}) inválido!`);
+      return;
+    }
+    let dataAtual = new Date();
+    let dataHoraFormatado = format(dataAtual, "yyyy-MM-dd HH:mm:SS");
+    let dadosRequisicao = {
+      status: direcionamento,
+      dt_status: dataHoraFormatado,
+    };
+    let condicaoRequisicao = {
+      id_mch: id_mch,
+    };
+    atualizarDadosFlyp("int_ifood", dadosRequisicao, condicaoRequisicao);
   }
 }
 
@@ -397,16 +434,16 @@ app.post("/", (req, res) => {
   console.log("Iniciando");
 });
 
-//Testando conexão mysql
-app.post("/conexaoMySql", (req, res) => {
-  res.status(200).send(`TESTE`);
-  console.log("TESTE");
-});
-
 //Rota para novos cadastros de integração
 app.post("/novaIntegracao", (req, res) => {
   atualizarIntegracoes();
   res.status(202).send(`Empresas Atualizadas`);
+});
+
+app.post("/webhooksFlyp", (req, res) => {
+  let data = req?.body;
+  acoesWebhooksFlyp(data);
+  res.status(202).send(`Webhook recebido com sucesso!`);
 });
 
 // app.post("/teste", async (req, res) => {
@@ -418,8 +455,8 @@ app.post("/novaIntegracao", (req, res) => {
 //Validando assinatura IFood
 app.use("/webhook", (req, res, next) => {
   // 1. Recupera a assinatura recebida no header 'X-IFood-Signature'
-  const signature = req.headers["x-ifood-signature"];
-  const apiClientSecret = keysIfood[0]?.clientSecret;
+  let signature = req?.headers["x-ifood-signature"];
+  let apiClientSecret = keysIfood[0]?.clientSecret;
 
   if (!signature) {
     // Log de erro para depuração
@@ -428,7 +465,7 @@ app.use("/webhook", (req, res, next) => {
   }
 
   // 2. Recupere o corpo da requisição (payload) como string JSON
-  const payload = JSON.stringify(req.body);
+  let payload = JSON.stringify(req?.body);
   // console.log(payload);
 
   if (!payload) {
@@ -437,7 +474,7 @@ app.use("/webhook", (req, res, next) => {
   }
 
   // 3. Gerar a assinatura HMAC usando minha chave
-  const generatedSignature = crypto
+  let generatedSignature = crypto
     .createHmac("sha256", apiClientSecret)
     .update(payload)
     .digest("hex"); //A assinatura será gerada em hexadecimal
@@ -454,11 +491,11 @@ app.use("/webhook", (req, res, next) => {
 
 //Rota inicial para webhooks
 app.post("/webhook", (req, res) => {
-  const dataBody = req?.body;
+  let dataBody = req?.body;
   console.log("Webhook recebido com sucesso!");
   console.log("headers: ", req?.headers["x-ifood-signature"]);
   console.log("body: ", req?.body);
-  acoesWebhooks(dataBody);
+  acoesWebhooksIFood(dataBody);
   res.status(202).send("Webhook processado com sucesso");
 });
 

@@ -24,6 +24,12 @@ let cad_integracoesFlyp; //Armazena os dados de todas as integrações dentro do
 let cad_empresasFlyp; //Armazena os dados de cada cliente dentro do flyp
 let dados_pedidosFlyp; //Armazena todos os dados dos pedidos que estão registradas no flyp
 
+//Controle de requisições
+let processandoRequisicoesBancoFlyp = false;
+let processandoRequisicoesAPIFlyp = false;
+let filaRequisicoesBancoFlyp = [];
+let filaRequisicoesAPIFlyp = [];
+
 //Forma de ler JSON / middlewares
 app.use(cors()); //Permite requisições de outras origens
 app.use(morgan("dev")); //Log das requisições
@@ -97,11 +103,61 @@ const fetchKeys = async () => {
   }
 };
 
-//Função chamada para atualizar os dados quando uma nova integração for registrada no FLYP
-const atualizarIntegracoes = async () => {
+//Função para realizar operações no banco FLYP
+const operacaoBancoFlyp = async (data) => {
+  //Validando se a operação é de consulta, adicionar ou atualizar algum dado
+  if (
+    !data?.operacao === "consultar" &&
+    !data?.operacao === "adicionar" &&
+    !data?.operacao === "atualizar"
+  ) {
+    console.info(`Operação (${data?.operacao}), invalida no banco FLYP`);
+    return;
+  }
+
+  console.log(
+    `Processando requisição. Operação: (${data?.operacao}). Tabela: (${data?.nomeTabela})`
+  );
+
   try {
-    cad_integracoesFlyp = await buscarDados("cad_integracao");
-    cad_empresasFlyp = await buscarDados("cad_empresa");
+    if (data?.operacao === "consultar") {
+      await buscarDados(data?.nomeTabela);
+      console.log(
+        `Requisição realizada com sucesso! Operação: (${data?.operacao}). Tabela: (${data?.nomeTabela})`
+      );
+    } else if (data?.operacao === "adicionar") {
+      await adicionarDados(data?.nomeTabela, data?.dados);
+      console.log(
+        `Requisição realizada com sucesso! Operação: (${data?.operacao}). Tabela: (${data?.nomeTabela})`
+      );
+    } else if (data?.operacao === "atualizar") {
+      await atualizarDados(data?.nomeTabela, data?.dados, data?.condicao);
+      console.log(
+        `Requisição realizada com sucesso! Operação: (${data?.operacao}). Tabela: (${data?.nomeTabela})`
+      );
+    }
+  } catch (error) {
+    console.error(
+      `Erro ao realizar operação no banco FLYP. ${error}`,
+      error.response ? error.response.data : error.message
+    );
+  }
+};
+
+//Função chamada para atualizar os dados quando uma nova integração for registrada no FLYP
+const consultarIntegracoes = async () => {
+  try {
+    const dataCadIntegracao = {
+      operacao: "consultar",
+      nomeTabela: "cad_integracao",
+    };
+    const dataCadEmpresa = {
+      operacao: "consultar",
+      nomeTabela: "cad_empresa",
+    };
+
+    await operacaoBancoFlyp(dataCadIntegracao);
+    await operacaoBancoFlyp(dataCadEmpresa);
   } catch (error) {
     console.error(
       `Erro ao atualizar lista de empresas: ${error}`,
@@ -111,9 +167,13 @@ const atualizarIntegracoes = async () => {
 };
 
 //Função chamada para atualizar os dados de todos os pedidos
-const atualizarDadosPedidosFlyp = async () => {
+const consultarDadosPedidosFlyp = async () => {
   try {
-    dados_pedidosFlyp = await buscarDados("int_ifood");
+    const data = {
+      operacao: "consultar",
+      nomeTabela: "int_ifood",
+    };
+    await operacaoBancoFlyp(data);
   } catch (error) {
     console.error(
       `Erro ao atualizar lista de pedidos: ${error}`,
@@ -124,7 +184,7 @@ const atualizarDadosPedidosFlyp = async () => {
 
 //Função para abertura de um novo pedido
 const aberturaNovoPedido = async (data, tokenClienteFlyp) => {
-  console.log(data);
+  // console.log(data);
   const dataAbrirChamado = {
     forma_pagamento: data?.fmr_pagamento,
     empresa_id: 0,
@@ -168,11 +228,13 @@ const aberturaNovoPedido = async (data, tokenClienteFlyp) => {
 //Função para salvar novo pedido no banco do flyp
 const salvarNovoPedidoFlyp = async (dadosSalvarPedidoFlyp) => {
   try {
-    const responseSalvarDadosPedidoFlyp = await adicionarDados(
-      "int_ifood",
-      dadosSalvarPedidoFlyp
-    );
-    return responseSalvarDadosPedidoFlyp;
+    const data = {
+      operacao: "adicionar",
+      nomeTabela: "int_ifood",
+      dados: dadosSalvarPedidoFlyp,
+    };
+
+    await operacaoBancoFlyp(data);
   } catch (error) {
     console.error(
       `Erro ao salvar pedido no flyp: ${error}`,
@@ -183,12 +245,13 @@ const salvarNovoPedidoFlyp = async (dadosSalvarPedidoFlyp) => {
 
 //Função para alterar dados no banco FLYP
 const atualizarDadosFlyp = async (nomeTabela, data, condicao) => {
-  const responseAtualizarStatus = await atualizarDados(
-    nomeTabela,
-    data,
-    condicao
-  );
-  console.log(responseAtualizarStatus);
+  const dataRequisicao = {
+    operacao: "atualizar",
+    nomeTabela: nomeTabela,
+    dados: data,
+    condicao: condicao,
+  };
+  await operacaoBancoFlyp(dataRequisicao);
 };
 
 //Função para realizar o cancelamento do pedido
@@ -206,31 +269,39 @@ const cancelamentoPedido = async (data, tokenClienteFlyp) => {
       `Não é possível realizar o cancelamento da OS (${idPedidoFlyp}), devido seu status está em (${statusPedidoFlyp})`
     );
   } else {
-    let responseCancelamentoPedido = await axios.post(
-      `https://integracao.flyp.com.br/cancelar_entrega`,
-      {
-        id_mch: idPedidoFlyp,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${tokenClienteFlyp}`,
+    try {
+      let responseCancelamentoPedido = await axios.post(
+        `https://integracao.flyp.com.br/cancelar_entrega`,
+        {
+          id_mch: idPedidoFlyp,
         },
+        {
+          headers: {
+            Authorization: `Bearer ${tokenClienteFlyp}`,
+          },
+        }
+      );
+      if (responseCancelamentoPedido?.data?.success === true) {
+        let dataAtual = new Date();
+        let dataHoraFormatado = format(dataAtual, "yyyy-MM-dd HH:mm:SS");
+
+        let dadosAtualizarStatus = {
+          operacao: "atualizar",
+          nomeTabela: "int_ifood",
+          dados: {
+            status: "C",
+            dt_status: dataHoraFormatado,
+          },
+          condicao: {
+            id_mch: idPedidoFlyp,
+          },
+        };
+        operacaoBancoFlyp(dadosAtualizarStatus);
       }
-    );
-    if (responseCancelamentoPedido?.data?.success === true) {
-      let dataAtual = new Date();
-      let dataHoraFormatado = format(dataAtual, "yyyy-MM-dd HH:mm:SS");
-      let dadosAtualizarStatus = {
-        status: "C",
-        dt_status: dataHoraFormatado,
-      };
-      let condicaoAtualizarStatus = {
-        id_mch: idPedidoFlyp,
-      };
-      atualizarDadosFlyp(
-        "int_ifood",
-        dadosAtualizarStatus,
-        condicaoAtualizarStatus
+    } catch (error) {
+      console.error(
+        `Erro ao cancelar entrega. ${error}`,
+        error.response ? error.response.data : error.message
       );
     }
   }
@@ -255,13 +326,6 @@ async function acoesWebhooksIFood(data) {
   //Formantando data da criação para envio
   let dataOriginalCriacaoPedido = data?.createdAt;
   let dataOriginal = new Date(dataOriginalCriacaoPedido);
-  let ano = dataOriginal?.getFullYear();
-  let mes = String(dataOriginal?.getMonth() + 1)?.padStart(2, "0");
-  let dia = String(dataOriginal?.getDate())?.padStart(2, "0");
-  let hora = String(dataOriginal?.getHours())?.padStart(2, "0");
-  let minuto = String(dataOriginal?.getMinutes())?.padStart(2, "0");
-  let segundo = String(dataOriginal?.getSeconds())?.padStart(2, "0");
-  let dataCriacaoPedidoIFood = `${ano}-${mes}-${dia} ${hora}:${minuto}:${segundo}`;
 
   let empresaFiltro = await cad_integracoesFlyp?.find(
     (data) => data?.int_token === idClientIFood && data?.integracao === "ifood"
@@ -270,6 +334,7 @@ async function acoesWebhooksIFood(data) {
   let dataOriginalEspera = addMinutes(dataOriginal, tempoEspera);
   let dataOriginalFormatadaEspera = format(dataOriginalEspera, "dd-MM-yyyy");
   let horaOriginalFormatadaEspera = format(dataOriginalEspera, "HH:mm");
+  let dataCriacaoPedidoIFood = format(dataOriginal, "yyyy-MM-dd HH:mm:SS");
   // console.log("dataOriginalFormatadaEspera: ", dataOriginalFormatadaEspera);
   // console.log("horaOriginalFormatadaEspera: ", horaOriginalFormatadaEspera);
   let fmr_pagamento = empresaFiltro?.tipo;
@@ -278,22 +343,23 @@ async function acoesWebhooksIFood(data) {
   let detalhesEmpresa = await cad_empresasFlyp?.find(
     (data) => data?.id_machine === empresa_id
   );
-
-  let responseTokenFlyp;
-  let tokenClienteFlyp;
   try {
     if (
       direcionamentoCode === "CFM" &&
       direcionamentoFullCode === "CONFIRMED"
     ) {
       //Rota para confirmação do pedido
-      responseTokenFlyp = await axios.post(
+
+      //Buscando um novo token de conexão com api FLYP
+      let responseTokenFlyp = await axios.post(
         `https://integracao.flyp.com.br/token`,
         {
           api_key: detalhesEmpresa?.api_key,
         }
       );
-      tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
+      let tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
+
+      //Buscando informações do pedido na API IFOOD
       let responsePedido = await axios.get(
         `https://merchant-api.ifood.com.br/order/v1.0/orders/${idPedido}`,
         {
@@ -305,16 +371,21 @@ async function acoesWebhooksIFood(data) {
           },
         }
       );
-      console.log("TESTE: ", responsePedido?.data);
-      // //definindo se possui retorno
+      console.log(
+        "Dados do pedido, vindo da API IFOOD: ",
+        responsePedido?.data
+      );
+
+      // //definindo se possui retorno na entrega
       let corridaComRetorno =
         await responsePedido?.data?.payments?.methods?.find(
           (data) => data?.method === "CREDIT" || data?.method === "DEBIT"
         );
 
       //Somando tempo de espera para chamar corrida
-      dataOriginal.setMinutes(dataOriginal.getMinutes() + tempoEspera);
+      // dataOriginal.setMinutes(dataOriginal.getMinutes() + tempoEspera);
 
+      //Dados para abrir um chamado na API FLYP (nova corrida)
       let dadosAbrirChamado = {
         fmr_pagamento: fmr_pagamento,
         data: dataOriginalFormatadaEspera,
@@ -337,10 +408,14 @@ async function acoesWebhooksIFood(data) {
         codigo_confirmacao: responsePedido?.data?.delivery?.pickupCode,
         displayId: responsePedido?.data?.displayId,
       };
+
+      //Chama função  para abrir um chamado na API FLYP (nova corrida)
       let responseNovoPedido = await aberturaNovoPedido(
         dadosAbrirChamado,
         tokenClienteFlyp
       );
+
+      //Se API FLYP retornar o código id_mch, é sinal que funcionou e abriu a entrega, seguimos a logica
       if (responseNovoPedido?.data?.response?.id_mch) {
         let dadosSalvarPedidoFlyp = {
           int_id: integracao_id,
@@ -355,31 +430,40 @@ async function acoesWebhooksIFood(data) {
           response: JSON.stringify(responseNovoPedido?.data),
           order_string: idPedido,
         };
-        let responseSalvarDadosPedidoFlyp = await salvarNovoPedidoFlyp(
-          dadosSalvarPedidoFlyp
-        );
-        console.log(responseSalvarDadosPedidoFlyp);
+        await salvarNovoPedidoFlyp(dadosSalvarPedidoFlyp);
+      } else {
+        console.error(`Não foi possivel receber o id_mch da API FLYP`);
       }
     } else if (
       direcionamentoCode === "CAN" &&
       direcionamentoFullCode === "CANCELLED"
     ) {
       //Rota para cancelamento
-      responseTokenFlyp = await axios.post(
+
+      //Buscando um novo token de conexão com api FLYP
+      let responseTokenFlyp = await axios.post(
         `https://integracao.flyp.com.br/token`,
         {
           api_key: detalhesEmpresa?.api_key,
         }
       );
-      tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
-      await atualizarDadosPedidosFlyp();
+      let tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
+
+      //Consulta dados atualizações dos pedidos anteriores registrado no banco FLYP
+      await consultarDadosPedidosFlyp();
+
+      //Filtrando o pedido que deseja ser cancelado
       let filtrarPedidoCancelamento = await dados_pedidosFlyp?.find(
         (data) => data?.order_string === idPedido
       );
+
+      //Validando se o pedido foi encontrado
       if (filtrarPedidoCancelamento) {
         cancelamentoPedido(filtrarPedidoCancelamento, tokenClienteFlyp);
       } else {
-        console.error("Não foi localizado o pedido para cancelamento.");
+        console.error(
+          `Não foi localizado o pedido (${idPedido}) para cancelamento.`
+        );
       }
     }
   } catch (error) {
@@ -392,12 +476,12 @@ async function acoesWebhooksIFood(data) {
 
 //Função que irá direcionar cada webhook do FLYP para sua ação especifica
 async function acoesWebhooksFlyp(data) {
-  console.log(data);
+  // console.log(data);
   let direcionamento = data?.status_solicitacao;
   let id_mch = data?.id_mch;
   if (direcionamento === "C") {
     //Rota para webhook de cancelamento vindo do FLYP
-    await atualizarDadosPedidosFlyp();
+    await consultarDadosPedidosFlyp();
     let validacaoIdMch = dados_pedidosFlyp?.find(
       (data) => data?.id_mch == id_mch
     );
@@ -407,16 +491,37 @@ async function acoesWebhooksFlyp(data) {
       console.error(`id_mch (${id_mch}) inválido!`);
       return;
     }
-    let dataAtual = new Date();
-    let dataHoraFormatado = format(dataAtual, "yyyy-MM-dd HH:mm:SS");
-    let dadosRequisicao = {
-      status: direcionamento,
-      dt_status: dataHoraFormatado,
-    };
-    let condicaoRequisicao = {
-      id_mch: id_mch,
-    };
-    atualizarDadosFlyp("int_ifood", dadosRequisicao, condicaoRequisicao);
+
+    //Caso encontre o id_mch
+    try {
+      //Realizando o cancelamento do pedido no IFOOD
+      await axios.post(
+        `https://merchant-api.ifood.com.br/order/v1.0/orders/${validacaoIdMch?.order_string}/requestCancellation`,
+        {
+          reason: "Pedido cancelado pela central de entregas.",
+          cancellationCode: "501",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${tokenApiIfood}`, // Cabeçalho com o Bearer token
+          },
+        }
+      );
+
+      //Iniciando preparação para salvar alteração no banco FLYP
+      let dataAtual = new Date();
+      let dataHoraFormatado = format(dataAtual, "yyyy-MM-dd HH:mm:SS");
+      let dadosRequisicao = {
+        status: direcionamento,
+        dt_status: dataHoraFormatado,
+      };
+      let condicaoRequisicao = {
+        id_mch: id_mch,
+      };
+      atualizarDadosFlyp("int_ifood", dadosRequisicao, condicaoRequisicao);
+    } catch (error) {
+      console.error(`Erro ao cancelar o pedido  no IFOOD: ${error}`);
+    }
   }
 }
 
@@ -436,7 +541,7 @@ app.post("/", (req, res) => {
 
 //Rota para novos cadastros de integração
 app.post("/novaIntegracao", (req, res) => {
-  atualizarIntegracoes();
+  consultarIntegracoes();
   res.status(202).send(`Empresas Atualizadas`);
 });
 
@@ -447,7 +552,7 @@ app.post("/webhooksFlyp", (req, res) => {
 });
 
 // app.post("/teste", async (req, res) => {
-//   await atualizarDadosPedidosFlyp();
+//   await consultarDadosPedidosFlyp();
 //   console.log(dados_pedidosFlyp);
 //   res.status(200).send(`TESTE`);
 // });

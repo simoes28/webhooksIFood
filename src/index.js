@@ -331,10 +331,10 @@ async function acoesWebhooksIFood(data) {
     (data) => data?.int_token === idClientIFood && data?.integracao === "ifood"
   );
   let tempoEspera = empresaFiltro?.tempoantecedencia;
-  let dataOriginalEspera = addMinutes(dataOriginal, tempoEspera);
+  let dataOriginalEspera = addMinutes(dataOriginal, tempoEspera || 0);
   let dataOriginalFormatadaEspera = format(dataOriginalEspera, "dd-MM-yyyy");
   let horaOriginalFormatadaEspera = format(dataOriginalEspera, "HH:mm");
-  let dataCriacaoPedidoIFood = format(dataOriginal, "yyyy-MM-dd HH:mm:SS");
+  let dataCriacaoPedidoIFood = format(dataOriginal, "yyyy-MM-dd HH:mm:ss");
   // console.log("dataOriginalFormatadaEspera: ", dataOriginalFormatadaEspera);
   // console.log("horaOriginalFormatadaEspera: ", horaOriginalFormatadaEspera);
   let fmr_pagamento = empresaFiltro?.tipo;

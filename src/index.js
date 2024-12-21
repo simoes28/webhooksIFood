@@ -432,7 +432,8 @@ async function acoesWebhooksIFood(data) {
         await salvarNovoPedidoFlyp(dadosSalvarPedidoFlyp);
       } else {
         console.error(
-          `Não foi possivel receber o id_mch da API FLYP. Erro: ${responseNovoPedido?.data}`
+          `Não foi possivel receber o id_mch da API FLYP. Erro: `,
+          responseNovoPedido?.data
         );
       }
     } else if (

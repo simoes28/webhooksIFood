@@ -179,7 +179,6 @@ const consultarDadosPedidosFlyp = async () => {
 
 //Função para abertura de um novo pedido
 const aberturaNovoPedido = async (data, tokenClienteFlyp) => {
-  // console.log(data);
   const dataAbrirChamado = {
     forma_pagamento: data?.fmr_pagamento,
     empresa_id: 0,
@@ -336,6 +335,8 @@ async function acoesWebhooksIFood(data) {
   let detalhesEmpresa = await cad_empresasFlyp?.find(
     (data) => data?.id_machine === empresa_id
   );
+  let responseTokenFlyp;
+  let tokenClienteFlyp;
   try {
     if (
       direcionamentoCode === "CFM" &&
@@ -344,14 +345,14 @@ async function acoesWebhooksIFood(data) {
       //Rota para confirmação do pedido
 
       //Buscando um novo token de conexão com api FLYP
-      let responseTokenFlyp = await axios.post(
+      responseTokenFlyp = await axios.post(
         `https://integracao.flyp.com.br/token`,
         {
           api_key: detalhesEmpresa?.api_key,
         }
       );
       console.log("responseTokenFlyp: ", responseTokenFlyp?.data);
-      let tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
+      tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
 
       //Buscando informações do pedido na API IFOOD
       let responsePedido = await axios.get(
@@ -411,6 +412,10 @@ async function acoesWebhooksIFood(data) {
 
       //Se API FLYP retornar o código id_mch, é sinal que funcionou e abriu a entrega, seguimos a logica
       if (responseNovoPedido?.data?.response?.id_mch) {
+        console.log(
+          `Solicitação de entrega realizada com sucesso. Data prevista: (${dataOriginalFormatadaEspera}). Horas: (${horaOriginalFormatadaEspera})`
+        );
+
         let dadosSalvarPedidoFlyp = {
           int_id: integracao_id,
           order_id: responsePedido?.data?.displayId,
@@ -435,13 +440,13 @@ async function acoesWebhooksIFood(data) {
       //Rota para cancelamento
 
       //Buscando um novo token de conexão com api FLYP
-      let responseTokenFlyp = await axios.post(
+      responseTokenFlyp = await axios.post(
         `https://integracao.flyp.com.br/token`,
         {
           api_key: detalhesEmpresa?.api_key,
         }
       );
-      let tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
+      tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
 
       //Consulta dados atualizações dos pedidos anteriores registrado no banco FLYP
       await consultarDadosPedidosFlyp();

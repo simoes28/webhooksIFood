@@ -366,10 +366,10 @@ async function acoesWebhooksIFood(data) {
           },
         }
       );
-      console.log(
-        "Dados do pedido, vindo da API IFOOD: ",
-        responsePedido?.data
-      );
+      // console.log(
+      //   "Dados do pedido, vindo da API IFOOD: ",
+      //   responsePedido?.data
+      // );
 
       // //definindo se possui retorno na entrega
       let corridaComRetorno =
@@ -431,7 +431,9 @@ async function acoesWebhooksIFood(data) {
         };
         await salvarNovoPedidoFlyp(dadosSalvarPedidoFlyp);
       } else {
-        console.error(`Não foi possivel receber o id_mch da API FLYP`);
+        console.error(
+          `Não foi possivel receber o id_mch da API FLYP. Erro: ${responseNovoPedido?.data}`
+        );
       }
     } else if (
       direcionamentoCode === "CAN" &&

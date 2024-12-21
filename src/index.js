@@ -382,26 +382,35 @@ async function acoesWebhooksIFood(data) {
 
       //Dados para abrir um chamado na API FLYP (nova corrida)
       let dadosAbrirChamado = {
-        fmr_pagamento: fmr_pagamento,
-        data: dataOriginalFormatadaEspera,
-        hora: horaOriginalFormatadaEspera,
+        fmr_pagamento: String(fmr_pagamento),
+        data: String(dataOriginalFormatadaEspera),
+        hora: String(horaOriginalFormatadaEspera),
         corridaComRetorno: corridaComRetorno,
-        nome_cliente_parada: responsePedido?.data?.customer?.name,
-        telefone_cliente_parada: responsePedido?.data?.customer?.phone?.number,
-        endereco_parada:
-          responsePedido?.data?.delivery?.deliveryAddress?.streetName,
-        bairro_parada:
-          responsePedido?.data?.delivery?.deliveryAddress?.neighborhood,
-        cidade_parada: responsePedido?.data?.delivery?.deliveryAddress?.city,
-        estado_parada: responsePedido?.data?.delivery?.deliveryAddress?.state,
-        lat_parada:
+        nome_cliente_parada: String(responsePedido?.data?.customer?.name),
+        telefone_cliente_parada: String(
+          responsePedido?.data?.customer?.phone?.number
+        ),
+        endereco_parada: String(
+          responsePedido?.data?.delivery?.deliveryAddress?.streetName
+        ),
+        bairro_parada: String(
+          responsePedido?.data?.delivery?.deliveryAddress?.neighborhood
+        ),
+        cidade_parada: String(
+          responsePedido?.data?.delivery?.deliveryAddress?.city
+        ),
+        estado_parada: String(
+          responsePedido?.data?.delivery?.deliveryAddress?.state
+        ),
+        lat_parada: String(
+          responsePedido?.data?.delivery?.deliveryAddress?.coordinates?.latitude
+        ),
+        lng_parada: String(
           responsePedido?.data?.delivery?.deliveryAddress?.coordinates
-            ?.latitude,
-        lng_parada:
-          responsePedido?.data?.delivery?.deliveryAddress?.coordinates
-            ?.longitude,
-        codigo_confirmacao: responsePedido?.data?.delivery?.pickupCode,
-        displayId: responsePedido?.data?.displayId,
+            ?.longitude
+        ),
+        codigo_confirmacao: String(responsePedido?.data?.delivery?.pickupCode),
+        displayId: String(responsePedido?.data?.displayId),
       };
 
       //Chama função  para abrir um chamado na API FLYP (nova corrida)

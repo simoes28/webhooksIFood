@@ -509,7 +509,7 @@ async function acoesWebhooksFlyp(data) {
 
       //Iniciando preparação para salvar alteração no banco FLYP
       let dataAtual = new Date();
-      let dataHoraFormatado = format(dataAtual, "yyyy-MM-dd HH:mm:SS");
+      let dataHoraFormatado = format(dataAtual, "yyyy-MM-dd HH:mm:ss");
       let dadosRequisicao = {
         status: direcionamento,
         dt_status: dataHoraFormatado,

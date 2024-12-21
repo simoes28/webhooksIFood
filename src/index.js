@@ -20,15 +20,9 @@ dotenv.config();
 const app = express();
 let tokenApiIfood; //TOKEN da API do IFood
 let keysIfood; // Busca do clientId e clientSecret da minha aplicação IFOOD
-let cad_integracoesFlyp; //Armazena os dados de todas as integrações dentro do FLYP
-let cad_empresasFlyp; //Armazena os dados de cada cliente dentro do flyp
-let dados_pedidosFlyp; //Armazena todos os dados dos pedidos que estão registradas no flyp
-
-//Controle de requisições
-let processandoRequisicoesBancoFlyp = false;
-let processandoRequisicoesAPIFlyp = false;
-let filaRequisicoesBancoFlyp = [];
-let filaRequisicoesAPIFlyp = [];
+let cad_integracoesFlyp = []; //Armazena os dados de todas as integrações dentro do FLYP
+let cad_empresasFlyp = []; //Armazena os dados de cada cliente dentro do flyp
+let dados_pedidosFlyp = []; //Armazena todos os dados dos pedidos que estão registradas no flyp
 
 //Forma de ler JSON / middlewares
 app.use(cors()); //Permite requisições de outras origens
@@ -121,10 +115,11 @@ const operacaoBancoFlyp = async (data) => {
 
   try {
     if (data?.operacao === "consultar") {
-      await buscarDados(data?.nomeTabela);
+      const response = await buscarDados(data?.nomeTabela);
       console.log(
         `Requisição realizada com sucesso! Operação: (${data?.operacao}). Tabela: (${data?.nomeTabela})`
       );
+      return response;
     } else if (data?.operacao === "adicionar") {
       await adicionarDados(data?.nomeTabela, data?.dados);
       console.log(
@@ -156,8 +151,8 @@ const consultarIntegracoes = async () => {
       nomeTabela: "cad_empresa",
     };
 
-    await operacaoBancoFlyp(dataCadIntegracao);
-    await operacaoBancoFlyp(dataCadEmpresa);
+    cad_integracoesFlyp = await operacaoBancoFlyp(dataCadIntegracao);
+    cad_empresasFlyp = await operacaoBancoFlyp(dataCadEmpresa);
   } catch (error) {
     console.error(
       `Erro ao atualizar lista de empresas: ${error}`,
@@ -173,7 +168,7 @@ const consultarDadosPedidosFlyp = async () => {
       operacao: "consultar",
       nomeTabela: "int_ifood",
     };
-    await operacaoBancoFlyp(data);
+    dados_pedidosFlyp = await operacaoBancoFlyp(data);
   } catch (error) {
     console.error(
       `Erro ao atualizar lista de pedidos: ${error}`,
@@ -335,8 +330,6 @@ async function acoesWebhooksIFood(data) {
   let dataOriginalFormatadaEspera = format(dataOriginalEspera, "dd-MM-yyyy");
   let horaOriginalFormatadaEspera = format(dataOriginalEspera, "HH:mm");
   let dataCriacaoPedidoIFood = format(dataOriginal, "yyyy-MM-dd HH:mm:ss");
-  // console.log("dataOriginalFormatadaEspera: ", dataOriginalFormatadaEspera);
-  // console.log("horaOriginalFormatadaEspera: ", horaOriginalFormatadaEspera);
   let fmr_pagamento = empresaFiltro?.tipo;
   let empresa_id = empresaFiltro?.cli_id;
   let integracao_id = empresaFiltro?.id;
@@ -357,6 +350,7 @@ async function acoesWebhooksIFood(data) {
           api_key: detalhesEmpresa?.api_key,
         }
       );
+      console.log("responseTokenFlyp: ", responseTokenFlyp?.data);
       let tokenClienteFlyp = String(responseTokenFlyp?.data?.token);
 
       //Buscando informações do pedido na API IFOOD

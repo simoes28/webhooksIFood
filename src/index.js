@@ -277,7 +277,7 @@ const cancelamentoPedido = async (data, tokenClienteFlyp) => {
       );
       if (responseCancelamentoPedido?.data?.success === true) {
         let dataAtual = new Date();
-        let dataHoraFormatado = format(dataAtual, "yyyy-MM-dd HH:mm:SS");
+        let dataHoraFormatado = format(dataAtual, "yyyy-MM-dd HH:mm:ss");
 
         let dadosAtualizarStatus = {
           operacao: "atualizar",

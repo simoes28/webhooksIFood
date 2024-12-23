@@ -195,7 +195,7 @@ const aberturaNovoPedido = async (data, tokenClienteFlyp) => {
         estado_parada: /*data?.estado_parada*/ "MG",
         // lat_parada: data?.lat_parada,
         // lng_parada: data?.lng_parada,
-        codigo_confirmacao: codigo_confirmacao,
+        codigo_confirmacao: data?.codigo_confirmacao,
         id_externo: `IFOOD ${data?.displayId}`,
       },
     ],

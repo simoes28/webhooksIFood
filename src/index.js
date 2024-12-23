@@ -195,7 +195,7 @@ const aberturaNovoPedido = async (data, tokenClienteFlyp) => {
         estado_parada: /*data?.estado_parada*/ "MG",
         // lat_parada: data?.lat_parada,
         // lng_parada: data?.lng_parada,
-        codigo_confirmacao: data?.codigo_confirmacao,
+        codigo_confirmacao: /*data?.codigo_confirmacao*/ "1520",
         id_externo: `IFOOD ${data?.displayId}`,
       },
     ],
@@ -609,8 +609,8 @@ app.use("/webhook", (req, res, next) => {
 app.post("/webhook", (req, res) => {
   let dataBody = req?.body;
   console.log("Webhook recebido com sucesso!");
-  console.log("headers: ", req?.headers["x-ifood-signature"]);
-  console.log("body: ", req?.body);
+  // console.log("headers: ", req?.headers["x-ifood-signature"]);
+  // console.log("body: ", req?.body);
   acoesWebhooksIFood(dataBody);
   res.status(202).send("Webhook processado com sucesso");
 });
